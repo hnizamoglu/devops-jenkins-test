@@ -1,0 +1,6 @@
+version: '2.0'
+services:
+  ocrion-aws-be-test:
+    build: .
+    ports:
+    - "8080:8080"
