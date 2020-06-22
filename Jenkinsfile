@@ -1,27 +1,63 @@
 pipeline {
-   agent any
-
-   stages {
-      stage('Build') {
-         steps {
-            // Get some code from a GitHub repository
-            git 'https://github.com/jglick/simple-maven-project-with-tests.git'
-
-            // Run Maven on a Unix agent.
-            sh "./mvnw -Dmaven.test.failure.ignore=true clean package"
-
-            // To run Maven on a Windows agent, use
-            // bat "mvn -Dmaven.test.failure.ignore=true clean package"
-         }
-
-         post {
-            // If Maven was able to run the tests, even if some of the test
-            // failed, record the test results and archive the jar file.
-            success {
-               junit '**/target/surefire-reports/TEST-*.xml'
-               archiveArtifacts 'target/*.jar'
+   stage 'Clone the project'
+    git 'https://github.com/hnizamoglu/devops-jenkins-test.git'
+   
+    dir('spring-jenkins-pipeline') {
+        stage("Compilation and Analysis") {
+            parallel 'Compilation': {
+                sh "./mvnw clean install -DskipTests"
+            }, 'Static Analysis': {
+                stage("Checkstyle") {
+                    sh "./mvnw checkstyle:checkstyle"
+                     
+                    step([$class: 'CheckStylePublisher',
+                      canRunOnFailed: true,
+                      defaultEncoding: '',
+                      healthy: '100',
+                      pattern: '**/target/checkstyle-result.xml',
+                      unHealthy: '90',
+                      useStableBuildAsReference: true
+                    ])
+                }
             }
-         }
-      }
-   }
+        }
+         
+        stage("Tests and Deployment") {
+            parallel 'Unit tests': {
+                stage("Runing unit tests") {
+                    try {
+                        sh "./mvnw test -Punit"
+                    } catch(err) {
+                        step([$class: 'JUnitResultArchiver', testResults: 
+                          '**/target/surefire-reports/TEST-*UnitTest.xml'])
+                        throw err
+                    }
+                   step([$class: 'JUnitResultArchiver', testResults: 
+                     '**/target/surefire-reports/TEST-*UnitTest.xml'])
+                }
+            }, 'Integration tests': {
+                stage("Runing integration tests") {
+                    try {
+                        sh "./mvnw test -Pintegration"
+                    } catch(err) {
+                        step([$class: 'JUnitResultArchiver', testResults: 
+                          '**/target/surefire-reports/TEST-'
+                            + '*IntegrationTest.xml'])
+                        throw err
+                    }
+                    step([$class: 'JUnitResultArchiver', testResults: 
+                      '**/target/surefire-reports/TEST-'
+                        + '*IntegrationTest.xml'])
+                }
+            }
+             
+            stage("Staging") {
+                sh "pid=\$(lsof -i:8989 -t); kill -TERM \$pid "
+                  + "|| kill -KILL \$pid"
+                withEnv(['JENKINS_NODE_COOKIE=dontkill']) {
+                    sh 'nohup ./mvnw spring-boot:run -Dserver.port=8989 &'
+                }   
+            }
+        }
+    }
 }
