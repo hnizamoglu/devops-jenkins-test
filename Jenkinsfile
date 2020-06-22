@@ -1,5 +1,5 @@
-pipeline {
-   stage 'Clone the project'
+node {
+    stage 'Clone the project'
     git 'https://github.com/hnizamoglu/devops-jenkins-test.git'
    
     dir('spring-jenkins-pipeline') {
