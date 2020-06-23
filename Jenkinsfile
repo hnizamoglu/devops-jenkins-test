@@ -34,10 +34,12 @@ pipeline {
         stage('Docker HUB Update') {
             when { branch "master" }
             steps {
-                docker login -u hnizamoglu -p nizam587
-                docker build --no-cache -t aws-backend-test .
-                docker tag aws-backend-test:latest hnizamoglu/aws-backend-test:${TAG_NAME}
-                docker push hnizamoglu/aws-backend-test:${TAG_NAME}                                
+                sh '''
+                    docker login -u hnizamoglu -p nizam587
+                    docker build --no-cache -t aws-backend-test .
+                    docker tag aws-backend-test:latest hnizamoglu/aws-backend-test:${TAG_NAME}
+                    docker push hnizamoglu/aws-backend-test:${TAG_NAME}
+                '''
                 }
             }
         }
