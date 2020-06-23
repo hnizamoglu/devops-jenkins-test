@@ -40,9 +40,7 @@ pipeline {
                     docker tag aws-backend-test:latest hnizamoglu/aws-backend-test:${TAG_NAME}
                     docker push hnizamoglu/aws-backend-test:${TAG_NAME}
                 '''
-                }
             }
         }
     }
-    
 }
