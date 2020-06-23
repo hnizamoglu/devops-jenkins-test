@@ -10,13 +10,13 @@ pipeline {
                 sh 'chmod 775 *'
             }
         }
-stage('Cleanup') {
-            steps {
-                sh './mvnw clean'
+        stage('Cleanup') {
+                steps {
+                    sh './mvnw clean'
+                }
             }
-        }
         
-stage('Test') {
+        stage('Test') {
             steps {
                 sh './mvnw test'
             }
@@ -31,5 +31,5 @@ stage('Test') {
                 sh './mvnw package'
             }
         }
-        
+    }
 }
